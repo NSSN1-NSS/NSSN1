@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSSN1 (PIXVIEW) - العارض النقطي للنصوص والصور</title>
+    <style>
+        :root {
+            --primary-color: #0078d7;
+            --secondary-color: #106ebe;
+            --background-color: #f0f8ff;
+            --panel-bg: #ffffff;
+            --text-color: #000000;
+            --control-width: 350px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: var(--background-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* شاشة الترحيب */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1628, #1a2332, #0a1628);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+        }
+
+        .welcome-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-circle {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #0078d7, #00d4ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 120, 215, 0.5);
+            margin-left: 20px;
+        }
+
+        .logo-circle h1 {
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .program-title {
+            text-align: right;
+        }
+
+        .program-title h2 {
+            font-size: 28px;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .program-title p {
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .welcome-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            max-width: 600px;
+        }
+
+        .welcome-info p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        /* لوحة التحكم */
+        .control-panel {
+            width: var(--control-width);
+            height: 100vh;
+            background: var(--panel-bg);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            right: 0;
+            top: 0;
+            z-index: 1000;
+            overflow-y: auto;
+            border-left: 1px solid #e0e0e0;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-section {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-section h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 5px;
+            font-size: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            font-size: 14px;
+            direction: rtl;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 10px;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .file-label:hover {
+            background: var(--secondary-color);
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .control-button {
+            padding: 10px;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .control-button.primary {
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .control-button.success {
+            background: linear-gradient(to bottom, #4caf50, #388e3c);
+            color: white;
+        }
+
+        .control-button.warning {
+            background: linear-gradient(to bottom, #ff9800, #f57c00);
+            color: white;
+        }
+
+        .control-button.danger {
+            background: linear-gradient(to bottom, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .motion-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .motion-button {
+            padding: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .motion-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .image-preview {
+            margin-top: 8px;
+            text-align: center;
+            min-height: 80px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ddd;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 80px;
+            border-radius: 6px;
+        }
+
+        .image-preview.empty::after {
+            content: 'لم يتم اختيار صورة';
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* منطقة العرض */
+        .display-panel {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin-right: var(--control-width);
+        }
+
+        .display-header {
+            height: 60px;
+            background: var(--panel-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .display-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .display-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .display-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #mainCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- شاشة الترحيب -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-content">
+            <div class="logo-container">
+                <div class="logo-circle">
+                    <h1>NSSN1</h1>
+                </div>
+                <div class="program-title">
+                    <h2>الشبكة النجمية المعرفية التدريبية التطوعية NSSN1</h2>
+                    <p>تقدم برنامج العارض النقطي للنصوص والصور (PIXVIEW)</p>
+                </div>
+            </div>
+            <div class="welcome-info">
+                <p>المطور: المستشار التدريبي ناصر سعدي سعيد</p>
+                <p>خبير نظم معلومات إدارية وصناعية ومؤسساتية</p>
+                <p>الموقع: https://sites.google.com/view/NSSN1</p>
+                <p>الواتساب: https://wa.me/9647503538611</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم -->
+    <div class="control-panel">
+        <div class="panel-header">NSSN1 (PIXVIEW)</div>
+        <div class="panel-content">
+            <!-- قسم النصوص -->
+            <div class="control-section">
+                <h3>النصوص</h3>
+                <textarea id="textInput" placeholder="أدخل النص هنا (حتى 256 حرف)"
+                    maxlength="256">NSSN1 - العارض النقطي</textarea>
+                <div class="control-buttons">
+                    <button class="control-button primary" onclick="showText()">عرض النص كنقاط</button>
+                    <button class="control-button danger" onclick="hideText()">إخفاء النص</button>
+                </div>
+            </div>
+
+            <!-- قسم الصور -->
+            <div class="control-section">
+                <h3>الصور</h3>
+                <input type="file" id="imageInput" class="file-input" accept=".png,.jpg,.jpeg,.svg">
+                <label for="imageInput" class="file-label">استيراد الصورة (PNG, JPG, SVG)</label>
+                <div id="imagePreview" class="image-preview empty"></div>
+                <div class="control-buttons">
+                    <button class="control-button primary" onclick="showImage()">عرض الصورة كنقاط</button>
+                    <button class="control-button danger" onclick="hideImage()">إخفاء الصورة</button>
+                </div>
+            </div>
+
+            <!-- التحكم الأساسي -->
+            <div class="control-section">
+                <h3>التحكم الأساسي</h3>
+                <div class="control-buttons">
+                    <button class="control-button primary" onclick="setMotion('origin')">الأصل</button>
+                    <button class="control-button warning" onclick="setMotion('static')">الثابت</button>
+                    <button class="control-button success" onclick="setMotion('resume')">الاستئناف</button>
+                </div>
+            </div>
+
+            <!-- أنواع الحركات -->
+            <div class="control-section">
+                <h3>أنواع الحركات (20 حركة)</h3>
+                <div class="motion-buttons">
+                    <button class="motion-button" onclick="setMotion('circular')">حلقي</button>
+                    <button class="motion-button" onclick="setMotion('spiral')">لولبي</button>
+                    <button class="motion-button" onclick="setMotion('wave')">موجي</button>
+                    <button class="motion-button" onclick="setMotion('rain')">مطري</button>
+                    <button class="motion-button" onclick="setMotion('vortex')">دوامي</button>
+                    <button class="motion-button" onclick="setMotion('random')">عشوائي</button>
+                    <button class="motion-button" onclick="setMotion('whirl')">زوبعي</button>
+                    <button class="motion-button" onclick="setMotion('sweep')">اجتياحي</button>
+                    <button class="motion-button" onclick="setMotion('explosion')">انفجاري</button>
+                    <button class="motion-button" onclick="setMotion('implosion')">انكماشي</button>
+                    <button class="motion-button" onclick="setMotion('slide')">انزلاقي</button>
+                    <button class="motion-button" onclick="setMotion('bounce')">ارتدادي</button>
+                    <button class="motion-button" onclick="setMotion('sequential')">متتابع</button>
+                    <button class="motion-button" onclick="setMotion('zigzag')">متعرج</button>
+                    <button class="motion-button" onclick="setMotion('fan')">مروحي</button>
+                    <button class="motion-button" onclick="setMotion('decentralized')">لامركزي</button>
+                    <button class="motion-button" onclick="setMotion('drop')">تساقطي</button>
+                    <button class="motion-button" onclick="setMotion('oscillate')">تذبذبي</button>
+                    <button class="motion-button" onclick="setMotion('pulse')">نبضي سريع</button>
+                    <button class="motion-button" onclick="setMotion('fusion')">اندماجي</button>
+                </div>
+            </div>
+
+            <!-- إعدادات النقاط -->
+            <div class="control-section">
+                <h3>إعدادات النقاط</h3>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>حجم النقطة</span>
+                        <span id="sizeValue">1.5</span>
+                    </div>
+                    <input type="range" min="0.1" max="10" step="0.1" value="1.5" class="slider" id="sizeSlider"
+                        oninput="updateSize()">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>كثافة النقاط</span>
+                        <span id="densityValue">50%</span>
+                    </div>
+                    <input type="range" min="10" max="100" step="5" value="50" class="slider" id="densitySlider"
+                        oninput="updateDensity()">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>سرعة الحركة</span>
+                        <span id="speedValue">5</span>
+                    </div>
+                    <input type="range" min="1" max="10" step="1" value="5" class="slider" id="speedSlider"
+                        oninput="updateSpeed()">
+                </div>
+            </div>
+
+            <!-- أزرار التحكم الإضافية -->
+            <div class="control-section">
+                <h3>التحكم الإضافي</h3>
+                <div class="control-buttons">
+                    <button class="control-button primary" onclick="exportImage()">تصدير كصورة PNG</button>
+                    <button class="control-button" onclick="toggleFullscreen()">ملء الشاشة</button>
+                    <button class="control-button warning" onclick="resetSettings()">الوضع الأصلي</button>
+                    <button class="control-button" onclick="showWelcome()">عرض الترحيب</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- منطقة العرض الرئيسية -->
+    <div class="display-panel">
+        <div class="display-header">
+            <div class="display-title">العارض النقطي للنصوص والصور</div>
+            <div class="display-controls">
+                <button class="control-button" onclick="startAnimation()">تشغيل</button>
+                <button class="control-button" onclick="stopAnimation()">إيقاف</button>
+            </div>
+        </div>
+        <div class="display-content">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // المتغيرات العامة
+        let canvas, ctx;
+        let animationId = null;
+        let isAnimating = false;
+        let textParticles = [];
+        let imageParticles = [];
+        let showTextLayer = false;
+        let showImageLayer = false;
+        let currentMotion = 'resume';
+        let currentImage = null;
+
+        // الإعدادات
+        const settings = {
+            speed: 5,
+            particleSize: 1.5,
+            density: 50
+        };
+
+        // فئة الجسيمات
+        class Particle {
+            constructor(x, y, color, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                this.originX = targetX;
+                this.originY = targetY;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.color = color;
+                this.size = settings.particleSize;
+                this.vx = 0;
+                this.vy = 0;
+                this.friction = 0.95;
+                this.springFactor = 0.2;
+            }
+
+            update() {
+                // تطبيق الحركة حسب النوع المحدد
+                this.applyMotion();
+
+                // فيزياء الزنبرك للحركة السلسة
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                this.vx += dx * this.springFactor;
+                this.vy += dy * this.springFactor;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            applyMotion() {
+                const speedFactor = settings.speed / 10;
+
+                switch (currentMotion) {
+                    case 'origin':
+                        this.targetX = this.originX;
+                        this.targetY = this.originY;
+                        break;
+                    case 'static':
+                        // لا حركة
+                        break;
+                    case 'circular':
+                        const angle = Math.atan2(this.y - canvas.height / 2, this.x - canvas.width / 2);
+                        const radius = Math.sqrt(Math.pow(this.x - canvas.width / 2, 2) + Math.pow(this.y - canvas.height / 2, 2));
+                        this.targetX = canvas.width / 2 + radius * Math.cos(angle + 0.05 * speedFactor);
+                        this.targetY = canvas.height / 2 + radius * Math.sin(angle + 0.05 * speedFactor);
+                        break;
+                    case 'spiral':
+                        const spiralAngle = Math.atan2(this.y - canvas.height / 2, this.x - canvas.width / 2);
+                        const spiralRadius = Math.sqrt(Math.pow(this.x - canvas.width / 2, 2) + Math.pow(this.y - canvas.height / 2, 2));
+                        this.targetX = canvas.width / 2 + (spiralRadius + 0.5) * Math.cos(spiralAngle + 0.05 * speedFactor);
+                        this.targetY = canvas.height / 2 + (spiralRadius + 0.5) * Math.sin(spiralAngle + 0.05 * speedFactor);
+                        break;
+                    case 'wave':
+                        this.targetY = this.originY + Math.sin(Date.now() * 0.001 + this.originX * 0.01) * 30 * speedFactor;
+                        break;
+                    case 'rain':
+                        this.targetY += 2 * speedFactor;
+                        if (this.targetY > canvas.height) {
+                            this.targetY = 0;
+                            this.targetX = Math.random() * canvas.width;
+                        }
+                        break;
+                    case 'vortex':
+                        const dx = this.x - canvas.width / 2;
+                        const dy = this.y - canvas.height / 2;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const vortexAngle = Math.atan2(dy, dx);
+                        const targetAngle = vortexAngle + 0.1 * speedFactor;
+                        const targetDistance = distance * 0.99;
+                        this.targetX = canvas.width / 2 + targetDistance * Math.cos(targetAngle);
+                        this.targetY = canvas.height / 2 + targetDistance * Math.sin(targetAngle);
+                        break;
+                    case 'random':
+                        this.targetX += (Math.random() - 0.5) * 10 * speedFactor;
+                        this.targetY += (Math.random() - 0.5) * 10 * speedFactor;
+                        break;
+                    case 'whirl':
+                        const whirlDx = this.x - canvas.width / 2;
+                        const whirlDy = this.y - canvas.height / 2;
+                        const whirlDistance = Math.sqrt(whirlDx * whirlDx + whirlDy * whirlDy);
+                        const whirlAngle = Math.atan2(whirlDy, whirlDx);
+                        const whirlTargetAngle = whirlAngle + 0.2 * speedFactor * (1 - whirlDistance / 500);
+                        this.targetX = canvas.width / 2 + whirlDistance * Math.cos(whirlTargetAngle);
+                        this.targetY = canvas.height / 2 + whirlDistance * Math.sin(whirlTargetAngle);
+                        break;
+                    case 'sweep':
+                        this.targetX += 3 * speedFactor;
+                        if (this.targetX > canvas.width) {
+                            this.targetX = 0;
+                        }
+                        break;
+                    case 'explosion':
+                        const explosionDx = this.x - canvas.width / 2;
+                        const explosionDy = this.y - canvas.height / 2;
+                        const explosionDistance = Math.sqrt(explosionDx * explosionDx + explosionDy * explosionDy);
+                        if (explosionDistance < 100) {
+                            this.targetX = this.x + explosionDx * 0.1 * speedFactor;
+                            this.targetY = this.y + explosionDy * 0.1 * speedFactor;
+                        }
+                        break;
+                    case 'implosion':
+                        const implosionDx = this.x - canvas.width / 2;
+                        const implosionDy = this.y - canvas.height / 2;
+                        const implosionDistance = Math.sqrt(implosionDx * implosionDx + implosionDy * implosionDy);
+                        if (implosionDistance > 50) {
+                            this.targetX = this.x - implosionDx * 0.05 * speedFactor;
+                            this.targetY = this.y - implosionDy * 0.05 * speedFactor;
+                        }
+                        break;
+                    case 'slide':
+                        this.targetX += 2 * speedFactor;
+                        if (this.targetX > canvas.width) {
+                            this.targetX = 0;
+                        }
+                        break;
+                    case 'bounce':
+                        this.targetY += 2 * speedFactor;
+                        if (this.targetY > canvas.height || this.targetY < 0) {
+                            this.vy *= -0.8;
+                        }
+                        break;
+                    case 'sequential':
+                        // حركة متتابعة - سيتم تطبيقها لاحقاً
+                        break;
+                    case 'zigzag':
+                        this.targetX = this.originX + Math.sin(Date.now() * 0.002) * 50 * speedFactor;
+                        this.targetY = this.originY + Math.cos(Date.now() * 0.003) * 30 * speedFactor;
+                        break;
+                    case 'fan':
+                        const fanAngle = Math.atan2(this.y - canvas.height / 2, this.x - canvas.width / 2);
+                        const fanRadius = Math.sqrt(Math.pow(this.x - canvas.width / 2, 2) + Math.pow(this.y - canvas.height / 2, 2));
+                        this.targetX = canvas.width / 2 + fanRadius * Math.cos(fanAngle + Math.sin(Date.now() * 0.001) * 0.5);
+                        this.targetY = canvas.height / 2 + fanRadius * Math.sin(fanAngle + Math.sin(Date.now() * 0.001) * 0.5);
+                        break;
+                    case 'decentralized':
+                        this.targetX = this.originX + (Math.random() - 0.5) * 100 * speedFactor;
+                        this.targetY = this.originY + (Math.random() - 0.5) * 100 * speedFactor;
+                        break;
+                    case 'drop':
+                        this.targetY += 3 * speedFactor;
+                        if (this.targetY > canvas.height) {
+                            this.targetY = 0;
+                            this.targetX = Math.random() * canvas.width;
+                        }
+                        break;
+                    case 'oscillate':
+                        this.targetX = this.originX + Math.sin(Date.now() * 0.001 + this.originY * 0.01) * 40 * speedFactor;
+                        break;
+                    case 'pulse':
+                        const pulseScale = 1 + Math.sin(Date.now() * 0.005) * 0.3;
+                        const centerX = canvas.width / 2;
+                        const centerY = canvas.height / 2;
+                        this.targetX = centerX + (this.originX - centerX) * pulseScale;
+                        this.targetY = centerY + (this.originY - centerY) * pulseScale;
+                        break;
+                    case 'fusion':
+                        // حركة اندماجية - تجمع الجسيمات في المركز
+                        const fusionDx = canvas.width / 2 - this.x;
+                        const fusionDy = canvas.height / 2 - this.y;
+                        const fusionDistance = Math.sqrt(fusionDx * fusionDx + fusionDy * fusionDy);
+                        if (fusionDistance > 10) {
+                            this.targetX = this.x + fusionDx * 0.05 * speedFactor;
+                            this.targetY = this.y + fusionDy * 0.05 * speedFactor;
+                        }
+                        break;
+                    default:
+                        // الحركة الافتراضية - العودة إلى الموضع الأصلي
+                        this.targetX = this.originX;
+                        this.targetY = this.originY;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // تهيئة التطبيق
+        function init() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+
+            resizeCanvas();
+            setupEventListeners();
+
+            // إخفاء شاشة الترحيب بعد 4 ثواني
+            setTimeout(() => {
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                startAnimation();
+            }, 4000);
+
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                currentImage = new Image();
+                currentImage.onload = function () {
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${event.target.result}">`;
+                    preview.classList.remove('empty');
+                };
+                currentImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resizeCanvas() {
+            const content = document.querySelector('.display-content');
+            canvas.width = content.clientWidth;
+            canvas.height = content.clientHeight;
+
+            // إعادة إنشاء الجسيمات إذا كان هناك نص أو صورة معروضة
+            if (showTextLayer) {
+                const text = document.getElementById('textInput').value;
+                generateParticlesFromText(text);
+            }
+
+            if (showImageLayer && currentImage) {
+                generateParticlesFromImage();
+            }
+        }
+
+        function showText() {
+            const text = document.getElementById('textInput').value;
+            if (!text.trim()) {
+                alert('الرجاء إدخال نص أولاً');
+                return;
+            }
+
+            generateParticlesFromText(text);
+            showTextLayer = true;
+            if (!isAnimating) startAnimation();
+        }
+
+        function hideText() {
+            showTextLayer = false;
+            textParticles = [];
+        }
+
+        function showImage() {
+            if (!currentImage) {
+                alert('الرجاء اختيار صورة أولاً');
+                return;
+            }
+
+            generateParticlesFromImage();
+            showImageLayer = true;
+            if (!isAnimating) startAnimation();
+        }
+
+        function hideImage() {
+            showImageLayer = false;
+            imageParticles = [];
+        }
+
+        function generateParticlesFromText(text) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // استخدام دقة تعتمد على إعدادات الكثافة
+            const densityFactor = settings.density / 100;
+            tempCanvas.width = canvas.width * densityFactor;
+            tempCanvas.height = canvas.height * densityFactor;
+
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            const fontSize = Math.min(tempCanvas.width / 10, 60);
+            tempCtx.font = `bold ${fontSize}px Arial`;
+            tempCtx.fillStyle = '#000000';
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
+
+            const lines = text.split('\n');
+            const lineHeight = fontSize * 1.2;
+            const startY = (tempCanvas.height - (lines.length * lineHeight)) / 2;
+
+            lines.forEach((line, i) => {
+                tempCtx.fillText(line, tempCanvas.width / 2, startY + (i * lineHeight) + lineHeight / 2);
+            });
+
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            textParticles = [];
+
+            const step = Math.max(1, Math.floor(Math.min(tempCanvas.width, tempCanvas.height) / 100));
+
+            for (let y = 0; y < tempCanvas.height; y += step) {
+                for (let x = 0; x < tempCanvas.width; x += step) {
+                    const index = (y * tempCanvas.width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    const a = data[index + 3];
+
+                    if (a > 128) {
+                        const targetX = (x / tempCanvas.width) * canvas.width;
+                        const targetY = (y / tempCanvas.height) * canvas.height;
+                        const color = `rgb(${r}, ${g}, ${b})`;
+
+                        // موضع بداية عشوائي
+                        const startX = Math.random() * canvas.width;
+                        const startY = Math.random() * canvas.height;
+
+                        textParticles.push(new Particle(startX, startY, color, targetX, targetY));
+                    }
+                }
+            }
+        }
+
+        function generateParticlesFromImage() {
+            if (!currentImage) return;
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // استخدام دقة تعتمد على إعدادات الكثافة
+            const densityFactor = settings.density / 100;
+            tempCanvas.width = canvas.width * densityFactor;
+            tempCanvas.height = canvas.height * densityFactor;
+
+            // حساب القياس لملاءمة الصورة في canvas المؤقت
+            const scale = Math.min(
+                tempCanvas.width / currentImage.width,
+                tempCanvas.height / currentImage.height
+            );
+
+            const width = currentImage.width * scale;
+            const height = currentImage.height * scale;
+            const x = (tempCanvas.width - width) / 2;
+            const y = (tempCanvas.height - height) / 2;
+
+            tempCtx.drawImage(currentImage, x, y, width, height);
+
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            imageParticles = [];
+
+            const step = Math.max(1, Math.floor(Math.min(tempCanvas.width, tempCanvas.height) / 100));
+
+            for (let y = 0; y < tempCanvas.height; y += step) {
+                for (let x = 0; x < tempCanvas.width; x += step) {
+                    const index = (y * tempCanvas.width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    const a = data[index + 3];
+
+                    if (a > 128) {
+                        const targetX = (x / tempCanvas.width) * canvas.width;
+                        const targetY = (y / tempCanvas.height) * canvas.height;
+                        const color = `rgb(${r}, ${g}, ${b})`;
+
+                        // موضع بداية عشوائي
+                        const startX = Math.random() * canvas.width;
+                        const startY = Math.random() * canvas.height;
+
+                        imageParticles.push(new Particle(startX, startY, color, targetX, targetY));
+                    }
+                }
+            }
+        }
+
+        function startAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            animate();
+        }
+
+        function stopAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+
+            // مسح Canvas مع تأثير التلاشي الخفيف
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // تحديث ورسم الجسيمات النصية
+            if (showTextLayer) {
+                textParticles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+            }
+
+            // تحديث ورسم الجسيمات الصورية
+            if (showImageLayer) {
+                imageParticles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function setMotion(motion) {
+            currentMotion = motion;
+
+            // تحديث حالة أزرار الحركة
+            document.querySelectorAll('.motion-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            if (event) {
+                event.target.classList.add('active');
+            }
+        }
+
+        function updateSize() {
+            const value = parseFloat(document.getElementById('sizeSlider').value);
+            settings.particleSize = value;
+            document.getElementById('sizeValue').textContent = value.toFixed(1);
+
+            // تحديث حجم الجسيمات الحالية
+            [...textParticles, ...imageParticles].forEach(particle => {
+                particle.size = value;
+            });
+        }
+
+        function updateDensity() {
+            const value = parseInt(document.getElementById('densitySlider').value);
+            settings.density = value;
+            document.getElementById('densityValue').textContent = value + '%';
+
+            // إعادة إنشاء الجسيمات بكثافة جديدة
+            if (showTextLayer) {
+                const text = document.getElementById('textInput').value;
+                generateParticlesFromText(text);
+            }
+
+            if (showImageLayer && currentImage) {
+                generateParticlesFromImage();
+            }
+        }
+
+        function updateSpeed() {
+            const value = parseInt(document.getElementById('speedSlider').value);
+            settings.speed = value;
+            document.getElementById('speedValue').textContent = value;
+        }
+
+        function exportImage() {
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'pixview-export.png';
+            link.href = dataURL;
+            link.click();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function resetSettings() {
+            // إعادة تعيين الإعدادات
+            settings.speed = 5;
+            settings.particleSize = 1.5;
+            settings.density = 50;
+
+            document.getElementById('speedSlider').value = settings.speed;
+            document.getElementById('sizeSlider').value = settings.particleSize;
+            document.getElementById('densitySlider').value = settings.density;
+
+            updateSpeed();
+            updateSize();
+            updateDensity();
+
+            // إعادة تعيين الحركة
+            setMotion('resume');
+        }
+
+        function showWelcome() {
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+        }
+
+        // تهيئة التطبيق عند تحميل الصفحة
+        window.onload = init;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1316 @@
+ 
+                            <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PVFIT - العارض النقطي للصور والنصوص</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --primary-color: #0078d7;
+            --secondary-color: #106ebe;
+            --background-color: #f0f8ff;
+            --panel-bg: #ffffff;
+            --text-color: #000000;
+            --control-width: 350px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, var(--background-color), #ffffff);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1628, #1a2332, #0a1628);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeOut 1s ease-in-out 4s forwards;
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+        .splash-content {
+            text-align: center;
+            color: white;
+        }
+        .splash-logo {
+            width: 100%;
+            max-width: 1000px;
+            height: auto;
+            margin: 0 auto;
+            animation: scaleIn 1s ease-out;
+        }
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .control-panel {
+            width: var(--control-width);
+            height: 100vh;
+            background: var(--panel-bg);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            right: 0;
+            top: 0;
+            z-index: 1000;
+            overflow-y: auto;
+            border-left: 1px solid #e0e0e0;
+        }
+        .panel-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .panel-content {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .layer {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .layer h3 {
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            font-size: 13px;
+            direction: rtl;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 120, 215, 0.2);
+        }
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            display: block;
+            padding: 8px;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .file-label:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .control-button {
+            padding: 10px;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .control-button.primary {
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        .control-button.success {
+            background: linear-gradient(to bottom, #4caf50, #388e3c);
+            color: white;
+        }
+        .control-button.warning {
+            background: linear-gradient(to bottom, #ff9800, #f57c00);
+            color: white;
+        }
+        .control-button.danger {
+            background: linear-gradient(to bottom, #f44336, #d32f2f);
+            color: white;
+        }
+        .slider-container {
+            margin-bottom: 10px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .theme-option {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .theme-option.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+        .motion-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .motion-button {
+            padding: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 11px;
+        }
+        .motion-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .basic-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .music-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+        .music-button {
+            padding: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 11px;
+        }
+        .music-button.active {
+            background: #4caf50;
+            color: white;
+        }
+        .ruler {
+            height: 30px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+            padding: 5px;
+        }
+        .display-panel {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin-right: var(--control-width);
+        }
+        .display-header {
+            height: 60px;
+            background: var(--panel-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        .display-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .display-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .display-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+        #mainCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            transition: opacity 0.3s ease;
+        }
+        .grid-overlay.active {
+            opacity: 0.3;
+        }
+        .welcome-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .welcome-panel.hidden {
+            display: none;
+        }
+        .welcome-content {
+            background: linear-gradient(135deg, #1a2332, #0a1628);
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            border: 3px solid #0078d7;
+        }
+        .welcome-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #0078d7, #00d4ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 120, 215, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 10px 30px rgba(0, 120, 215, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 15px 40px rgba(0, 120, 215, 0.8);
+            }
+        }
+        .logo-circle h1 {
+            font-size: 60px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .welcome-title {
+            font-size: 36px;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .welcome-subtitle {
+            font-size: 20px;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .developer-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(0, 120, 215, 0.3);
+        }
+        .developer-info h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 24px;
+            text-align: center;
+        }
+        .developer-info p {
+            margin-bottom: 12px;
+            line-height: 1.8;
+            color: #ffffff;
+            font-size: 16px;
+        }
+        .developer-info strong {
+            color: #00d4ff;
+        }
+        .developer-info a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        .developer-info a:hover {
+            text-decoration: underline;
+        }
+        .close-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #0078d7, #00d4ff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+        .close-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 120, 215, 0.5);
+        }
+        .image-preview {
+            margin-top: 8px;
+            text-align: center;
+            min-height: 80px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ddd;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 80px;
+            border-radius: 6px;
+        }
+        .image-preview.empty::after {
+            content: 'لم يتم اختيار صورة';
+            color: #999;
+            font-size: 12px;
+        }
+        .density-slider-container {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+        <svg class="splash-logo" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#0a1628;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#1a2332;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#0a1628;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#0078d7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:1" />
+                </linearGradient>
+                <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" style="stop-color:#0078d7;stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:#0078d7;stop-opacity:0" />
+                </radialGradient>
+            </defs>
+            <rect width="1200" height="600" fill="url(#bgGrad)"/>
+            <circle cx="100" cy="50" r="2" fill="white" opacity="0.8"/>
+            <circle cx="250" cy="120" r="1.5" fill="white" opacity="0.6"/>
+            <circle cx="800" cy="80" r="2" fill="white" opacity="0.9"/>
+            <circle cx="950" cy="150" r="1" fill="white" opacity="0.7"/>
+            <circle cx="1100" cy="100" r="1.5" fill="white" opacity="0.8"/>
+            <circle cx="150" cy="200" r="1" fill="white" opacity="0.5"/>
+            <circle cx="1050" cy="250" r="2" fill="white" opacity="0.9"/>
+            <circle cx="900" cy="150" r="60" fill="#ff6b35" opacity="0.9"/>
+            <ellipse cx="920" cy="140" rx="50" ry="55" fill="#ff8c61" opacity="0.5"/>
+            <text x="250" y="280" font-family="Arial, sans-serif" font-size="140" font-weight="bold" fill="url(#textGrad)">
+                NSSN1
+            </text>
+            <ellipse cx="450" cy="280" rx="300" ry="100" fill="url(#glowGrad)" opacity="0.3"/>
+            <rect x="50" y="350" width="180" height="220" rx="10" fill="#1a2332" stroke="url(#textGrad)" stroke-width="3"/>
+            <circle cx="140" cy="420" r="50" fill="#d4a574"/>
+            <rect x="90" y="465" width="100" height="80" fill="#2c3e50"/>
+            <rect x="100" y="475" width="80" height="5" fill="#34495e"/>
+            <circle cx="125" cy="410" r="15" fill="#fff" opacity="0.3"/>
+            <circle cx="155" cy="410" r="15" fill="#fff" opacity="0.3"/>
+            <path d="M 120 430 Q 140 440 160 430" stroke="#8b6f47" stroke-width="2" fill="none"/>
+            <text x="270" y="380" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#00d4ff">
+                المطور: المستشار التدريبي ناصر سعدي سعيد
+            </text>
+            <text x="270" y="415" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">
+                مدير فني في مجلس محافظة أربيل
+            </text>
+            <text x="270" y="445" font-family="Arial, sans-serif" font-size="16" fill="#aaaaaa">
+                خبير نظم معلومات إدارية وصناعية
+            </text>
+            <text x="270" y="470" font-family="Arial, sans-serif" font-size="16" fill="#aaaaaa">
+                وخرائطية ومؤسساتية
+            </text>
+            <text x="270" y="510" font-family="Arial, sans-serif" font-size="16" fill="#0078d7">
+                🌐 https://sites.google.com/view/NSSN1
+            </text>
+            <text x="270" y="540" font-family="Arial, sans-serif" font-size="16" fill="#25d366">
+                📱 +964 750 353 8611
+            </text>
+            <g opacity="0.8">
+                <polygon points="100,520 120,500 140,520 120,515" fill="#ff6b35"/>
+                <circle cx="120" cy="510" r="3" fill="#ffcc00"/>
+            </g>
+            <g opacity="0.7">
+                <polygon points="1000,450 1020,430 1040,450 1020,445" fill="#00d4ff"/>
+                <circle cx="1020" cy="440" r="3" fill="#ffcc00"/>
+            </g>
+        </svg>
+    </div>
+</div>
+<div class="welcome-panel" id="welcomePanel">
+    <div class="welcome-content">
+        <div class="welcome-logo">
+            <div class="logo-circle">
+                <h1>NSSN1</h1>
+            </div>
+        </div>
+        <h1 class="welcome-title">PVFIT</h1>
+        <h2 class="welcome-title" style="font-size: 24px;">العارض النقطي للصور والنصوص</h2>
+        <p class="welcome-subtitle">برنامج تفاعلي لعرض النصوص والصور كنقاط متحركة وديناميكية</p>
+        <div class="developer-info">
+            <h3>معلومات المطور</h3>
+            <p><strong>المطور:</strong> المستشار التدريبي ناصر سعدي سعيد</p>
+            <p><strong>المنصب:</strong> مدير فني في مجلس محافظة أربيل</p>
+            <p><strong>التخصص:</strong> خبير نظم معلومات إدارية وصناعية وخرائطية ومؤسساتية</p>
+            <p><strong>الموقع:</strong> <a href="https://sites.google.com/view/NSSN1" target="_blank">https://sites.google.com/view/NSSN1</a></p>
+            <p><strong>الواتساب:</strong> <a href="https://wa.me/9647503538611" target="_blank">+964 750 353 8611</a></p>
+        </div>
+        <button class="close-button" onclick="hideWelcome()">ابدأ الاستخدام الآن</button>
+    </div>
+</div>
+<div class="control-panel">
+    <div class="panel-header">PVFIT - العارض النقطي</div>
+    <div class="panel-content">
+        <div class="layer">
+            <h3>النصوص</h3>
+            <textarea id="textInputAr" placeholder="أدخل النص هنا (حتى 256 حرف)" maxlength="256">المطور: المستشار التدريبي
+ناصر سعدي سعيد
+مدير فني - مجلس أربيل
+NSSN1</textarea>
+            <button class="file-label" onclick="showText('ar')">اظهر النص</button>
+            <button class="file-label" style="background:#f44336" onclick="hideText()">اخفي النص</button>
+        </div>
+        <div class="layer">
+            <h3>الصور</h3>
+            <input type="file" id="imageInputAr" class="file-input" accept=".png,.jpg,.jpeg,.svg">
+            <label for="imageInputAr" class="file-label">اختر صورة (PNG, JPG, SVG)</label>
+            <div id="imagePreviewAr" class="image-preview empty"></div>
+            <button class="file-label" onclick="showImage('ar')">اظهر الصورة</button>
+            <button class="file-label" style="background:#f44336" onclick="hideImage()">اخفي الصورة</button>
+        </div>
+        <div class="layer">
+            <h3>التحكم الأساسي</h3>
+            <div class="basic-controls">
+                <button class="control-button primary" onclick="setMotion('origin')">أصل</button>
+                <button class="control-button warning" onclick="setMotion('static')">ثابت</button>
+                <button class="control-button success" onclick="setMotion('resume')">استئناف</button>
+            </div>
+        </div>
+        <div class="layer">
+            <h3>أنماط الحركة (20)</h3>
+            <div class="motion-buttons">
+                <button class="motion-button" onclick="setMotion('spiral')">لولبي</button>
+                <button class="motion-button" onclick="setMotion('scatter')">تشتت</button>
+                <button class="motion-button" onclick="setMotion('vortex')">زوبعي</button>
+                <button class="motion-button" onclick="setMotion('random')">عشوائي</button>
+                <button class="motion-button" onclick="setMotion('rain')">مطري</button>
+                <button class="motion-button" onclick="setMotion('snake')">افعواني</button>
+                <button class="motion-button" onclick="setMotion('wave')">موجي</button>
+                <button class="motion-button" onclick="setMotion('slide')">سلايد</button>
+                <button class="motion-button" onclick="setMotion('circular')">حلقي</button>
+                <button class="motion-button" onclick="setMotion('explode')">انفجاري</button>
+                <button class="motion-button" onclick="setMotion('magnetic')">مغناطيسي</button>
+                <button class="motion-button" onclick="setMotion('shake')">اهتزازي</button>
+                <button class="motion-button" onclick="setMotion('ripple')">متموج</button>
+                <button class="motion-button" onclick="setMotion('tornado')">دوامي</button>
+                <button class="motion-button" onclick="setMotion('swing')">متذبذب</button>
+                <button class="motion-button" onclick="setMotion('pulse')">نابض</button>
+                <button class="motion-button" onclick="setMotion('fly')">طائر</button>
+                <button class="motion-button" onclick="setMotion('fall')">متساقط</button>
+                <button class="motion-button" onclick="setMotion('fade')">متلاشي</button>
+                <button class="motion-button" onclick="setMotion('electric')">كهربائي</button>
+            </div>
+        </div>
+        <div class="control-buttons">
+            <button class="control-button primary" onclick="startAnimation()">تشغيل</button>
+            <button class="control-button danger" onclick="stopAnimation()">إيقاف</button>
+            <button class="control-button success" onclick="exportData()">تصدير</button>
+            <button class="control-button" onclick="importData()">استيراد</button>
+            <button class="control-button warning" onclick="resetSettings()">إعادة</button>
+            <button class="control-button" onclick="fillDeveloperData()">بيانات المطور</button>
+            <button class="control-button" onclick="loadDefaultImage()">صورة افتراضية</button>
+        </div>
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>سرعة الحركة</span>
+                <span id="speedValue">1.0</span>
+            </div>
+            <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" class="slider" id="speedSlider" oninput="updateSpeed()">
+        </div>
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>حجم النقاط</span>
+                <span id="sizeValue">1.5px</span>
+            </div>
+            <input type="range" min="0.8" max="10" step="0.1" value="1.5" class="slider" id="sizeSlider" oninput="updateSize()">
+        </div>
+        <div class="density-slider-container">
+            <div class="slider-label">
+                <span>كثافة النقاط (%)</span>
+                <span id="densityValue">100%</span>
+            </div>
+            <input type="range" min="10" max="200" step="5" value="100" class="slider" id="densitySlider" oninput="updateDensityPercentage()">
+        </div>
+        <div class="layer">
+            <h3>الموسيقى الخلفية</h3>
+            <div class="music-selector">
+                <button class="music-button active" onclick="setMusic('none')">بلا موسيقى</button>
+                <button class="music-button" onclick="setMusic('classic')">كلاسيكي</button>
+                <button class="music-button" onclick="setMusic('electronic')">إلكتروني</button>
+                <button class="music-button" onclick="setMusic('ambient')">محيطي</button>
+                <button class="music-button" onclick="setMusic('lofi')">لو-فاي</button>
+                <button class="music-button" onclick="setMusic('cinematic')">تصويري</button>
+                <button class="music-button" onclick="setMusic('meditation')">تأملي</button>
+                <button class="music-button" onclick="setMusic('jazz')">جاز</button>
+                <button class="music-button" onclick="setMusic('trance')">ترانس</button>
+                <button class="music-button" onclick="setMusic('oriental')">شرقي</button>
+            </div>
+        </div>
+        <div class="layer">
+            <h3>الثيمات</h3>
+            <div class="theme-selector">
+                <div class="theme-option active" style="background: linear-gradient(135deg, #0078d7, #106ebe);" onclick="changeTheme('windows10')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #d32f2f, #b71c1c);" onclick="changeTheme('red')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #388e3c, #1b5e20);" onclick="changeTheme('green')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #f57c00, #e65100);" onclick="changeTheme('orange')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #7b1fa2, #4a148c);" onclick="changeTheme('purple')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #0097a7, #006978);" onclick="changeTheme('cyan')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #c2185b, #880e4f);" onclick="changeTheme('pink')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #5d4037, #3e2723);" onclick="changeTheme('brown')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #455a64, #263238);" onclick="changeTheme('gray')"></div>
+                <div class="theme-option" style="background: linear-gradient(135deg, #fbc02d, #f57f17);" onclick="changeTheme('yellow')"></div>
+            </div>
+        </div>
+    </div>
+    <div class="ruler" id="ruler">السرعة=1.0، الحجم=1.5px، الكثافة=100%</div>
+</div>
+<div class="display-panel">
+    <div class="display-header">
+        <div class="display-title">العارض النقطي للصور والنصوص</div>
+        <div class="display-controls">
+            <button class="control-button" onclick="toggleFullscreen()">ملء الشاشة</button>
+            <button class="control-button" onclick="toggleGrid()">الشبكة</button>
+            <button class="control-button" onclick="showWelcome()">المطور</button>
+        </div>
+    </div>
+    <div class="display-content">
+        <canvas id="mainCanvas"></canvas>
+        <div class="grid-overlay" id="gridOverlay"></div>
+    </div>
+</div>
+<script>
+let canvas, ctx;
+let animationId = null;
+let isAnimating = false;
+let textParticles = [];
+let imageParticles = [];
+let showTextLayer = false;
+let showImageLayer = false;
+let currentMotion = 'resume';
+let currentImage = null;
+let currentMusic = 'none';
+let synth = null;
+let musicSequence = null;
+const settings = {
+    speed: 1.0,
+    particleSize: 1.5,
+    densityPercentage: 100,
+    baseDensityX: 300,
+    baseDensityY: 200
+};
+Object.defineProperty(settings, 'densityX', {
+    get() { return Math.round(this.baseDensityX * this.densityPercentage / 100); }
+});
+Object.defineProperty(settings, 'densityY', {
+    get() { return Math.round(this.baseDensityY * this.densityPercentage / 100); }
+});
+// Initialize Tone.js
+async function initAudio() {
+    await Tone.start();
+    synth = new Tone.PolySynth(Tone.Synth).toDestination();
+}
+// Particle class
+class Particle {
+    constructor(x, y, color, targetX, targetY) {
+        this.x = x;
+        this.y = y;
+        this.originX = targetX;
+        this.originY = targetY;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.color = color;
+        this.size = settings.particleSize;
+        this.vx = 0;
+        this.vy = 0;
+        this.friction = 0.95;
+        this.springFactor = 0.2;
+        this.opacity = 1;
+        this.angle = Math.random() * Math.PI * 2;
+        this.angleSpeed = (Math.random() - 0.5) * 0.02;
+        this.amplitude = Math.random() * 5 + 1;
+        this.frequency = Math.random() * 0.05 + 0.01;
+        this.phase = Math.random() * Math.PI * 2;
+    }
+    update() {
+        if (currentMotion === 'origin') {
+            const dx = this.originX - this.x;
+            const dy = this.originY - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 1) {
+                this.vx += dx * this.springFactor * settings.speed;
+                this.vy += dy * this.springFactor * settings.speed;
+            } else {
+                this.x = this.originX;
+                this.y = this.originY;
+                this.vx = this.vy = 0;
+            }
+        } else if (currentMotion === 'static') {
+            this.vx = this.vy = 0;
+        } else if (currentMotion === 'spiral') {
+            this.angle += 0.05 * settings.speed;
+            const radius = Math.sqrt(Math.pow(this.x - canvas.width/2, 2) + Math.pow(this.y - canvas.height/2, 2));
+            this.targetX = canvas.width/2 + radius * Math.cos(this.angle);
+            this.targetY = canvas.height/2 + radius * Math.sin(this.angle);
+        } else if (currentMotion === 'scatter') {
+            if (Math.random() < 0.01) {
+                this.targetX = Math.random() * canvas.width;
+                this.targetY = Math.random() * canvas.height;
+            }
+        } else if (currentMotion === 'vortex') {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const dx = this.x - centerX;
+            const dy = this.y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const targetAngle = angle + 0.05 * settings.speed;
+            const targetDistance = distance * 0.99;
+            this.targetX = centerX + targetDistance * Math.cos(targetAngle);
+            this.targetY = centerY + targetDistance * Math.sin(targetAngle);
+        } else if (currentMotion === 'random') {
+            this.targetX += (Math.random() - 0.5) * 10 * settings.speed;
+            this.targetY += (Math.random() - 0.5) * 10 * settings.speed;
+        } else if (currentMotion === 'rain') {
+            this.targetY += 5 * settings.speed;
+            if (this.targetY > canvas.height) {
+                this.targetY = 0;
+                this.targetX = Math.random() * canvas.width;
+            }
+        } else if (currentMotion === 'snake') {
+            this.phase += 0.05 * settings.speed;
+            this.targetX = this.originX + Math.sin(this.phase) * 50;
+            this.targetY = this.originY + Math.sin(this.phase * 2) * 30;
+        } else if (currentMotion === 'wave') {
+            this.phase += 0.05 * settings.speed;
+            this.targetY = this.originY + Math.sin(this.phase + this.originX * 0.01) * 30;
+        } else if (currentMotion === 'slide') {
+            this.targetX += 2 * settings.speed;
+            if (this.targetX > canvas.width) {
+                this.targetX = 0;
+            }
+        } else if (currentMotion === 'circular') {
+            this.angle += 0.02 * settings.speed;
+            const radius = 100;
+            this.targetX = canvas.width/2 + radius * Math.cos(this.angle + this.originX * 0.01);
+            this.targetY = canvas.height/2 + radius * Math.sin(this.angle + this.originY * 0.01);
+        } else if (currentMotion === 'explode') {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const dx = this.x - centerX;
+            const dy = this.y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 200) {
+                this.targetX = this.x + dx * 0.1 * settings.speed;
+                this.targetY = this.y + dy * 0.1 * settings.speed;
+            }
+        } else if (currentMotion === 'magnetic') {
+            const mouseX = window.mouseX || canvas.width / 2;
+            const mouseY = window.mouseY || canvas.height / 2;
+            const dx = mouseX - this.x;
+            const dy = mouseY - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 200) {
+                this.targetX = this.x + dx * 0.05 * settings.speed;
+                this.targetY = this.y + dy * 0.05 * settings.speed;
+            } else {
+                this.targetX = this.originX;
+                this.targetY = this.originY;
+            }
+        } else if (currentMotion === 'shake') {
+            this.targetX = this.originX + (Math.random() - 0.5) * 10 * settings.speed;
+            this.targetY = this.originY + (Math.random() - 0.5) * 10 * settings.speed;
+        } else if (currentMotion === 'ripple') {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const dx = this.x - centerX;
+            const dy = this.y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
+            const normalizedDistance = distance / maxDistance;
+            this.phase += 0.05 * settings.speed;
+            const ripple = Math.sin(this.phase - normalizedDistance * 10) * 20;
+            this.targetX = this.originX + (dx / distance) * ripple;
+            this.targetY = this.originY + (dy / distance) * ripple;
+        } else if (currentMotion === 'tornado') {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const dx = this.x - centerX;
+            const dy = this.y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const targetAngle = angle + 0.1 * settings.speed * (1 - distance / 500);
+            const targetDistance = distance * 0.98;
+            this.targetX = centerX + targetDistance * Math.cos(targetAngle);
+            this.targetY = centerY + targetDistance * Math.sin(targetAngle);
+        } else if (currentMotion === 'swing') {
+            this.phase += 0.05 * settings.speed;
+            this.targetX = this.originX + Math.sin(this.phase) * 50;
+            this.targetY = this.originY;
+        } else if (currentMotion === 'pulse') {
+            this.phase += 0.05 * settings.speed;
+            const scale = 1 + Math.sin(this.phase) * 0.2;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            this.targetX = centerX + (this.originX - centerX) * scale;
+            this.targetY = centerY + (this.originY - centerY) * scale;
+        } else if (currentMotion === 'fly') {
+            this.phase += 0.05 * settings.speed;
+            this.targetX = this.originX + Math.sin(this.phase) * 100;
+            this.targetY = this.originY + Math.sin(this.phase * 2) * 50;
+        } else if (currentMotion === 'fall') {
+            this.targetY += 3 * settings.speed;
+            this.targetX += Math.sin(this.phase) * 2;
+            this.phase += 0.05 * settings.speed;
+            if (this.targetY > canvas.height) {
+                this.targetY = 0;
+                this.targetX = Math.random() * canvas.width;
+            }
+        } else if (currentMotion === 'fade') {
+            this.phase += 0.05 * settings.speed;
+            this.opacity = 0.5 + Math.sin(this.phase) * 0.5;
+        } else if (currentMotion === 'electric') {
+            this.phase += 0.1 * settings.speed;
+            if (Math.random() < 0.1) {
+                this.targetX = this.originX + (Math.random() - 0.5) * 100;
+                this.targetY = this.originY + (Math.random() - 0.5) * 100;
+            } else {
+                this.targetX = this.originX;
+                this.targetY = this.originY;
+            }
+        }
+        // Spring physics
+        if (currentMotion !== 'origin' && currentMotion !== 'static') {
+            const dx = this.targetX - this.x;
+            const dy = this.targetY - this.y;
+            this.vx += dx * this.springFactor;
+            this.vy += dy * this.springFactor;
+        }
+        this.vx *= this.friction;
+        this.vy *= this.friction;
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+function init() {
+    canvas = document.getElementById('mainCanvas');
+    ctx = canvas.getContext('2d');
+    resizeCanvas();
+    setupEventListeners();
+    loadDefaultImage();
+    fillDeveloperData();
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', (e) => {
+        window.mouseX = e.clientX;
+        window.mouseY = e.clientY;
+    });
+    // Initialize audio after user interaction
+    document.addEventListener('click', async () => {
+        if (!synth) {
+            await initAudio();
+        }
+    }, { once: true });
+    setTimeout(() => {
+        document.getElementById('splashScreen').style.display = 'none';
+    }, 5000);
+}
+function setupEventListeners() {
+    document.getElementById('imageInputAr').addEventListener('change', function(e) {
+        handleImageUpload(e, 'ar');
+    });
+}
+function handleImageUpload(e, lang) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        currentImage = new Image();
+        currentImage.onload = function() {
+            const preview = document.getElementById(`imagePreview${lang.charAt(0).toUpperCase() + lang.slice(1)}`);
+            preview.innerHTML = `<img src="${event.target.result}">`;
+            preview.classList.remove('empty');
+        };
+        currentImage.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+function resizeCanvas() {
+    const content = document.querySelector('.display-content');
+    canvas.width = content.clientWidth;
+    canvas.height = content.clientHeight;
+}
+function loadDefaultImage() {
+    currentImage = new Image();
+    currentImage.onload = function() {
+        generateParticlesFromImage();
+        showImageLayer = true;
+        showText('ar');
+        startAnimation();
+    };
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#0078d7;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="150" cy="150" r="140" fill="url(#grad1)"/>
+        <text x="150" y="180" font-size="80" fill="white" text-anchor="middle" font-weight="bold">NSSN1</text>
+    </svg>`;
+    currentImage.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+}
+function fillDeveloperData() {
+    document.getElementById('textInputAr').value = 'المطور: المستشار التدريبي\nناصر سعدي سعيد\nمدير فني - مجلس أربيل\nNSSN1';
+}
+function showText(lang) {
+    const text = document.getElementById(`textInput${lang.charAt(0).toUpperCase() + lang.slice(1)}`).value;
+    generateParticlesFromText(text);
+    showTextLayer = true;
+    if (!isAnimating) startAnimation();
+}
+function hideText() {
+    showTextLayer = false;
+    textParticles = [];
+}
+function showImage(lang) {
+    if (!currentImage) {
+        alert('الرجاء اختيار صورة أولاً');
+        return;
+    }
+    generateParticlesFromImage();
+    showImageLayer = true;
+    if (!isAnimating) startAnimation();
+}
+function hideImage() {
+    showImageLayer = false;
+    imageParticles = [];
+}
+function generateParticlesFromText(text) {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = settings.densityX;
+    tempCanvas.height = settings.densityY;
+    tempCtx.fillStyle = '#ffffff';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    const fontSize = Math.min(tempCanvas.width / 10, 60);
+    tempCtx.font = `bold ${fontSize}px Arial`;
+    tempCtx.fillStyle = '#000000';
+    tempCtx.textAlign = 'center';
+    tempCtx.textBaseline = 'middle';
+    const lines = text.split('\n');
+    const lineHeight = fontSize * 1.2;
+    const startY = (tempCanvas.height - (lines.length * lineHeight)) / 2;
+    lines.forEach((line, i) => {
+        tempCtx.fillText(line, tempCanvas.width / 2, startY + (i * lineHeight) + lineHeight/2);
+    });
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imageData.data;
+    textParticles = [];
+    const step = Math.max(1, Math.floor(100 / settings.densityPercentage));
+    for (let y = 0; y < tempCanvas.height; y += step) {
+        for (let x = 0; x < tempCanvas.width; x += step) {
+            const index = (y * tempCanvas.width + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+            const a = data[index + 3];
+            if (a > 128) {
+                const targetX = (x / tempCanvas.width) * canvas.width;
+                const targetY = (y / tempCanvas.height) * canvas.height;
+                const color = `rgb(${r}, ${g}, ${b})`;
+                const startX = Math.random() * canvas.width;
+                const startY = Math.random() * canvas.height;
+                textParticles.push(new Particle(startX, startY, color, targetX, targetY));
+            }
+        }
+    }
+}
+function generateParticlesFromImage() {
+    if (!currentImage) return;
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = settings.densityX;
+    tempCanvas.height = settings.densityY;
+    const scale = Math.min(
+        tempCanvas.width / currentImage.width,
+        tempCanvas.height / currentImage.height
+    );
+    const width = currentImage.width * scale;
+    const height = currentImage.height * scale;
+    const x = (tempCanvas.width - width) / 2;
+    const y = (tempCanvas.height - height) / 2;
+    tempCtx.drawImage(currentImage, x, y, width, height);
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imageData.data;
+    imageParticles = [];
+    const step = Math.max(1, Math.floor(100 / settings.densityPercentage));
+    for (let y = 0; y < tempCanvas.height; y += step) {
+        for (let x = 0; x < tempCanvas.width; x += step) {
+            const index = (y * tempCanvas.width + x) * 4;
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
+            const a = data[index + 3];
+            if (a > 128) {
+                const targetX = (x / tempCanvas.width) * canvas.width;
+                const targetY = (y / tempCanvas.height) * canvas.height;
+                const color = `rgb(${r}, ${g}, ${b})`;
+                const startX = Math.random() * canvas.width;
+                const startY = Math.random() * canvas.height;
+                imageParticles.push(new Particle(startX, startY, color, targetX, targetY));
+            }
+        }
+    }
+}
+function startAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    animate();
+    playMusic();
+}
+function stopAnimation() {
+    isAnimating = false;
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    stopMusic();
+}
+function animate() {
+    if (!isAnimating) return;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (showTextLayer) {
+        textParticles.forEach(particle => {
+            particle.update();
+            particle.draw();
+        });
+    }
+    if (showImageLayer) {
+        imageParticles.forEach(particle => {
+            particle.update();
+            particle.draw();
+        });
+    }
+    animationId = requestAnimationFrame(animate);
+}
+function setMotion(motion) {
+    currentMotion = motion;
+    document.querySelectorAll('.motion-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+function updateSpeed() {
+    const value = parseFloat(document.getElementById('speedSlider').value);
+    settings.speed = value;
+    document.getElementById('speedValue').textContent = value.toFixed(1);
+    updateRuler();
+}
+function updateSize() {
+    const value = parseFloat(document.getElementById('sizeSlider').value);
+    settings.particleSize = value;
+    document.getElementById('sizeValue').textContent = value.toFixed(1) + 'px';
+    [...textParticles, ...imageParticles].forEach(particle => {
+        particle.size = value;
+    });
+    updateRuler();
+}
+function updateDensityPercentage() {
+    const value = parseInt(document.getElementById('densitySlider').value);
+    settings.densityPercentage = value;
+    document.getElementById('densityValue').textContent = value + '%';
+    if (showTextLayer) {
+        const text = document.getElementById('textInputAr').value;
+        generateParticlesFromText(text);
+    }
+    if (showImageLayer) {
+        generateParticlesFromImage();
+    }
+    updateRuler();
+}
+function updateRuler() {
+    document.getElementById('ruler').textContent = 
+        `السرعة=${settings.speed.toFixed(1)}، الحجم=${settings.particleSize.toFixed(1)}px، الكثافة=${settings.densityPercentage}%`;
+}
+function changeTheme(theme) {
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    const themes = {
+        windows10: { primary: '#0078d7', secondary: '#106ebe', background: '#f0f8ff' },
+        red: { primary: '#d32f2f', secondary: '#b71c1c', background: '#ffebee' },
+        green: { primary: '#388e3c', secondary: '#1b5e20', background: '#e8f5e9' },
+        orange: { primary: '#f57c00', secondary: '#e65100', background: '#fff3e0' },
+        purple: { primary: '#7b1fa2', secondary: '#4a148c', background: '#f3e5f5' },
+        cyan: { primary: '#0097a7', secondary: '#006978', background: '#e0f7fa' },
+        pink: { primary: '#c2185b', secondary: '#880e4f', background: '#fce4ec' },
+        brown: { primary: '#5d4037', secondary: '#3e2723', background: '#efebe9' },
+        gray: { primary: '#455a64', secondary: '#263238', background: '#eceff1' },
+        yellow: { primary: '#fbc02d', secondary: '#f57f17', background: '#fffde7' }
+    };
+    const selectedTheme = themes[theme];
+    document.documentElement.style.setProperty('--primary-color', selectedTheme.primary);
+    document.documentElement.style.setProperty('--secondary-color', selectedTheme.secondary);
+    document.documentElement.style.setProperty('--background-color', selectedTheme.background);
+}
+function setMusic(musicType) {
+    currentMusic = musicType;
+    document.querySelectorAll('.music-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    if (isAnimating) {
+        stopMusic();
+        playMusic();
+    }
+}
+function playMusic() {
+    if (!synth || currentMusic === 'none') return;
+    stopMusic();
+    const musicPatterns = {
+        classic: ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4', 'E4'],
+        electronic: ['C2', 'C3', 'G3', 'C4', 'G3', 'C3', 'C2', 'C3'],
+        ambient: ['C3', 'E3', 'G3', 'C4', 'E4', 'G4', 'C5', 'E5'],
+        lofi: ['C3', 'D3', 'E3', 'G3', 'A3', 'C4', 'D4', 'E4'],
+        cinematic: ['C2', 'G2', 'C3', 'E3', 'G3', 'C4', 'E4', 'G4'],
+        meditation: ['C3', 'F3', 'A3', 'C4', 'F4', 'A4', 'C5', 'F5'],
+        jazz: ['C3', 'Eb3', 'G3', 'Bb3', 'C4', 'Eb4', 'G4', 'Bb4'],
+        trance: ['C2', 'G2', 'C3', 'G3', 'C4', 'G4', 'C5', 'G5'],
+        oriental: ['C3', 'D3', 'F3', 'G3', 'C4', 'D4', 'F4', 'G4']
+    };
+    const notes = musicPatterns[currentMusic] || [];
+    if (notes.length === 0) return;
+    musicSequence = new Tone.Sequence((time, note) => {
+        synth.triggerAttackRelease(note, '8n', time);
+    }, notes, '4n');
+    musicSequence.loop = true;
+    musicSequence.start(0);
+    Tone.Transport.start();
+}
+function stopMusic() {
+    if (musicSequence) {
+        musicSequence.stop();
+        musicSequence.dispose();
+        musicSequence = null;
+    }
+    Tone.Transport.stop();
+}
+function exportData() {
+    const dataURL = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'pvfit-export.png';
+    link.href = dataURL;
+    link.click();
+}
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            currentImage = new Image();
+            currentImage.onload = function() {
+                generateParticlesFromImage();
+                showImageLayer = true;
+                if (!isAnimating) startAnimation();
+            };
+            currentImage.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+function resetSettings() {
+    settings.speed = 1.0;
+    settings.particleSize = 1.5;
+    settings.densityPercentage = 100;
+    document.getElementById('speedSlider').value = settings.speed;
+    document.getElementById('sizeSlider').value = settings.particleSize;
+    document.getElementById('densitySlider').value = settings.densityPercentage;
+    updateSpeed();
+    updateSize();
+    updateDensityPercentage();
+    currentMotion = 'resume';
+    document.querySelectorAll('.motion-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    changeTheme('windows10');
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    document.querySelector('.theme-option').classList.add('active');
+    setMusic('none');
+    document.querySelectorAll('.music-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector('.music-button').classList.add('active');
+}
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+}
+function toggleGrid() {
+    const gridOverlay = document.getElementById('gridOverlay');
+    gridOverlay.classList.toggle('active');
+}
+function showWelcome() {
+    document.getElementById('welcomePanel').classList.remove('hidden');
+}
+function hideWelcome() {
+    document.getElementById('welcomePanel').classList.add('hidden');
+}
+window.onload = init;
+</script>
+</body>
+</html>
+ 
+                    
